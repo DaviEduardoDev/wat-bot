@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Session data
+tokens/
+
+# Database
+history.json
+
+# Media files
+midia_*
+
+# Reports
+public/relatorio_*
+
+# System files
+config.yml
+*.log
+.DS_Store
+Thumbs.db

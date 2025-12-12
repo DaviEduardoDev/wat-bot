@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - WatBot</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: none;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--accent-color) !important;
+            font-size: 1.5rem;
+        }
+
+        .card-stat {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-stat:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-icon {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 2.5rem;
+            opacity: 0.1;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .session-card {
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .session-card.disconnected {
+            border-left-color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .battery-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .battery-visual {
+            width: 40px;
+            height: 20px;
+            border: 2px solid var(--text-secondary);
+            border-radius: 4px;
+            position: relative;
+            padding: 2px;
+        }
+
+        .battery-visual::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 10px;
+            background: var(--text-secondary);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .battery-level {
+            height: 100%;
+            background: var(--success-color);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .battery-level.low {
+            background: var(--danger-color);
+        }
+
+        .btn-action {
+            border-radius: 8px;
+            font-weight: 500;
+            padding: 8px 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                ⚡ WatBot Admin
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-light text-dark border me-3" id="connection-status">
+                    <span class="spinner-grow spinner-grow-sm text-primary me-1" role="status"></span>
+                    Conectando...
+                </span>
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <!-- Stats Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card-stat p-4">
+                    <div class="stat-icon">📨</div>
+                    <div class="stat-value" id="total-sends">--</div>
+                    <div class="stat-label">Envios Hoje</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat p-4">
+                    <div class="stat-icon">📜</div>
+                    <div class="stat-value" id="total-logs">--</div>
+                    <div class="stat-label">Total Logs</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-stat p-4">
+                    <div class="stat-icon">🔋</div>
+                    <div class="stat-value" id="active-sessions-count">--</div>
+                    <div class="stat-label">Sessões Ativas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sessions Container -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h4 class="mb-4 fw-bold text-secondary">📱 Gerenciamento de Sessões</h4>
+                <div id="sessions-container" class="row g-3">
+                    <!-- Sessions will be injected here -->
+                    <div class="col-12 text-center py-5 text-muted">
+                        Carregando sessões...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts & Logs -->
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="table-container h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0">Últimos Logs</h5>
+                        <button class="btn btn-sm btn-light" onclick="fetchData()">Atualizar</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Horário</th>
+                                    <th>Telefone</th>
+                                    <th>Status</th>
+                                    <th>Mensagem</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body">
+                                <!-- Logs will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card-stat p-3 h-100 d-flex flex-column justify-content-center">
+                    <canvas id="sendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes -->
+    <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalhes do Envio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Para:</strong> <span id="modal-phone"></span></p>
+                    <p><strong>Data:</strong> <span id="modal-date"></span></p>
+                    <hr>
+                    <h6>Mensagem:</h6>
+                    <div class="p-3 bg-light rounded text-break mb-3"
+                        style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;" id="modal-message"></div>
+
+                    <div id="modal-media-container" class="d-none">
+                        <h6>Mídia Anexada:</h6>
+                        <div id="modal-media-content" class="text-center mt-2"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <!-- <a href="#" id="media-download-link" class="btn btn-primary d-none" target="_blank" download>Download Mídia</a> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let chartInstance = null;
+
+        // Get password securely (in a real app, use better auth)
+        const urlParams = new URLSearchParams(window.location.search);
+        const password = urlParams.get('senha');
+
+        if (!password) {
+            document.body.innerHTML = '<div class="container mt-5 text-center"><h3>Acesso Negado</h3><p>Senha não fornecida.</p></div>';
+            throw new Error("No password");
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`/admin/stats?senha=${password}`);
+                if (response.status === 403) {
+                    window.location.reload(); // Reload to show auth error
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.success) return;
+
+                updateDashboard(data);
+                document.getElementById('connection-status').innerHTML = '✅ Conectado';
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('connection-status').innerHTML = '❌ Erro de Conexão';
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update Stats
+            document.getElementById('total-sends').innerText = data.stats.todaySends;
+            document.getElementById('total-logs').innerText = data.stats.totalLogs;
+            document.getElementById('active-sessions-count').innerText = data.sessions.length;
+
+            // Update Sessions
+            const sessionsContainer = document.getElementById('sessions-container');
+            sessionsContainer.innerHTML = '';
+
+            if (data.sessions.length === 0) {
+                sessionsContainer.innerHTML = '<div class="col-12 text-center text-muted py-4">Nenhuma sessão ativa.</div>';
+            } else {
+                data.sessions.forEach(session => {
+                    const batteryColor = session.battery < 20 ? 'low' : '';
+                    const batteryWidth = session.battery || 0;
+
+                    const el = document.createElement('div');
+                    el.className = 'col-md-6 col-lg-4';
+                    el.innerHTML = `
+                        <div class="card-stat p-3 session-card">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="mb-1 fw-bold">${session.phone}</h5>
+                                    <span class="badge bg-success">Online</span>
+                                </div>
+                                <div class="battery-container" title="Bateria: ${session.battery}%">
+                                    <span class="small fw-bold">${session.battery}%</span>
+                                    <div class="battery-visual">
+                                        <div class="battery-level ${batteryColor}" style="width: ${batteryWidth}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-3 opacity-25">
+                            
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-action btn-sm btn-outline-danger flex-grow-1" 
+                                    onclick="performAction('disconnect', '${session.phone}')">
+                                    Desconectar
+                                </button>
+                                <button class="btn btn-action btn-sm btn-outline-warning flex-grow-1"
+                                    onclick="performAction('stop', '${session.phone}')">
+                                    Parar Disparos
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    sessionsContainer.appendChild(el);
+                });
+            }
+
+            // Update Logs
+            const logsBody = document.getElementById('logs-body');
+            logsBody.innerHTML = data.logs.map((log, index) => {
+                // Escapar strings para segurança no HTML inline, mas manter funcionalidade do JS
+                // Armazena dados no objeto DOM ou via array global.
+                // Usaremos um array global 'lastLogs' para facilitar o acesso ao modal.
+                window.lastLogs = data.logs; // Armazena referência global
+
+                return `
+                <tr>
+                    <td class="text-secondary small">${new Date(log.data).toLocaleTimeString()}</td>
+                    <td class="fw-bold">${log.telefone}</td>
+                    <td>
+                        <span class="badge rounded-pill ${log.status === 'Sucesso' ? 'bg-success' : 'bg-danger'}">
+                            ${log.status}
+                        </span>
+                    </td>
+                    <td class="text-muted small text-truncate" style="max-width: 150px;">
+                        ${log.mediaFilename ? '📎 ' : ''}${log.mensagem || 'Mídia'}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewLogDetails(${index})">
+                            Ver
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+
+            // Update Chart
+            updateChart(data.chartData);
+        }
+
+        async function performAction(action, phone) {
+            if (!confirm(`Tem certeza que deseja ${action === 'disconnect' ? 'desconectar' : 'parar disparos de'} ${phone}?`)) return;
+
+            try {
+                const res = await fetch('/admin/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, phone, senha: password })
+                });
+                const result = await res.json();
+                alert(result.message);
+                fetchData(); // Refresh
+            } catch (err) {
+                alert('Erro ao executar ação');
+            }
+        }
+
+        function updateChart(chartData) {
+            const ctx = document.getElementById('sendsChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.data.labels = chartData.labels;
+                chartInstance.data.datasets[0].data = chartData.values;
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Envios por Hora',
+                            data: chartData.values,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { display: false } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function logout() {
+            window.location.href = '/';
+        }
+
+        // Modal Logic
+        const logModal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+
+        function viewLogDetails(index) {
+            if (!window.lastLogs || !window.lastLogs[index]) return;
+            const log = window.lastLogs[index];
+
+            document.getElementById('modal-phone').innerText = log.telefone;
+            document.getElementById('modal-date').innerText = new Date(log.data).toLocaleString();
+            document.getElementById('modal-message').innerText = log.mensagem || "(Sem mensagem de texto)";
+
+            const mediaContainer = document.getElementById('modal-media-container');
+            const mediaContent = document.getElementById('modal-media-content');
+
+            if (log.mediaFilename) {
+                mediaContainer.classList.remove('d-none');
+                const mediaUrl = `/admin/media/${log.mediaFilename}?senha=${password}`;
+                const ext = log.mediaFilename.split('.').pop().toLowerCase();
+
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                    mediaContent.innerHTML = `<img src="${mediaUrl}" class="img-fluid rounded" alt="Mídia">`;
+                } else if (['mp4', 'webm'].includes(ext)) {
+                    mediaContent.innerHTML = `<video src="${mediaUrl}" controls class="w-100 rounded"></video>`;
+                } else if (['mp3', 'ogg', 'wav'].includes(ext)) {
+                    // Audio
+                    mediaContent.innerHTML = `<audio src="${mediaUrl}" controls class="w-100"></audio>`;
+                } else {
+                    // Outros arquivos
+                    mediaContent.innerHTML = `<a href="${mediaUrl}" target="_blank" class="btn btn-outline-secondary">📄 Abrir Arquivo (${ext})</a>`;
+                }
+            } else {
+                mediaContainer.classList.add('d-none');
+                mediaContent.innerHTML = '';
+            }
+
+            logModal.show();
+        }
+
+        // Initial fetch and periodic poll
+        fetchData();
+        setInterval(fetchData, 5000);
+
+    </script>
+</body>
+
+</html>
