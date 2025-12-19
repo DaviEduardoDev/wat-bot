@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Scripts -->
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -72,6 +74,7 @@
             margin-bottom: 0.2rem;
             background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -148,6 +151,57 @@
         .btn-action:hover {
             transform: translateY(-2px);
         }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+
+            .navbar .container {
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .table-container {
+                padding: 16px;
+            }
+
+            /* Stack filters and actions */
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 1rem;
+            }
+
+            .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+
+            .d-flex.gap-2>* {
+                flex: 1;
+            }
+
+            /* Adjust buttons to be full width on mobile for better touch targets */
+            .d-flex.gap-2 .btn {
+                min-width: 80px;
+            }
+
+            /* Hide less critical columns or adjust table font */
+            .table {
+                font-size: 0.85rem;
+            }
+
+            /* Chart Container */
+            .col-lg-4 .card-stat {
+                min-height: 300px;
+            }
+        }
     </style>
 </head>
 
@@ -157,10 +211,10 @@
             <a class="navbar-brand" href="#">
                 ⚡ WatBot Admin
             </a>
-            <div class="d-flex align-items-center">
-                <span class="badge bg-light text-dark border me-3" id="connection-status">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border" id="connection-status">
                     <span class="spinner-grow spinner-grow-sm text-primary me-1" role="status"></span>
-                    Conectando...
+                    <span class="d-none d-sm-inline">Conectando...</span>
                 </span>
                 <button class="btn btn-sm btn-outline-danger" onclick="logout()">Sair</button>
             </div>
@@ -210,9 +264,25 @@
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="table-container h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                        <h2 class="fw-bold mb-0 text-primary">Painel Admin - WatBot</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-info" onclick="openSystemLogs()">📜 Logs do Sistema</button>
+                            <button class="btn btn-danger" onclick="logout()">Sair</button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                         <h5 class="fw-bold m-0">Últimos Logs</h5>
-                        <button class="btn btn-sm btn-light" onclick="fetchData()">Atualizar</button>
+                        <div class="d-flex gap-2 flex-wrap w-100-mobile">
+                            <input type="date" id="start-date" class="form-control form-control-sm flex-grow-1"
+                                title="Data Inicial">
+                            <input type="date" id="end-date" class="form-control form-control-sm flex-grow-1"
+                                title="Data Final">
+                            <button class="btn btn-sm btn-primary flex-grow-1" onclick="fetchData()">Filtrar</button>
+                            <button class="btn btn-sm btn-secondary flex-grow-1"
+                                onclick="clearFilters()">Limpar</button>
+                            <button class="btn btn-sm btn-light flex-grow-1" onclick="fetchData()">Atualizar</button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
@@ -269,29 +339,76 @@
         </div>
     </div>
 
+    <!-- System Logs Modal -->
+    <div class="modal fade" id="systemLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Logs do Sistema</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Ação</th>
+                                    <th>IP</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="system-logs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         let chartInstance = null;
+        let adminToken = localStorage.getItem('admin_token');
 
-        // Get password securely (in a real app, use better auth)
-        const urlParams = new URLSearchParams(window.location.search);
-        const password = urlParams.get('senha');
+        // Allow query param for backward compatibility or direct link if needed (optional)
+        // But for security, we rely on token.
+        if (!adminToken) {
+            window.location.href = '/login.html';
+            throw new Error("Redirecting to login");
+        }
 
-        if (!password) {
-            document.body.innerHTML = '<div class="container mt-5 text-center"><h3>Acesso Negado</h3><p>Senha não fornecida.</p></div>';
-            throw new Error("No password");
+        async function authenticatedFetch(url, options = {}) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${adminToken}`
+            };
+
+            const response = await fetch(url, options);
+
+            if (response.status === 401 || response.status === 403) {
+                // Token expired or invalid
+                localStorage.removeItem('admin_token');
+                window.location.href = '/login.html';
+                throw new Error("Auth failed");
+            }
+            return response;
         }
 
         async function fetchData() {
             try {
-                const response = await fetch(`/admin/stats?senha=${password}`);
-                if (response.status === 403) {
-                    window.location.reload(); // Reload to show auth error
-                    return;
-                }
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
 
+                let query = `/admin/stats?`;
+                if (startDate) query += `startDate=${startDate}&`;
+                if (endDate) query += `endDate=${endDate}`;
+
+                const response = await authenticatedFetch(query);
                 const data = await response.json();
+
                 if (!data.success) return;
 
                 updateDashboard(data);
@@ -390,10 +507,10 @@
             if (!confirm(`Tem certeza que deseja ${action === 'disconnect' ? 'desconectar' : 'parar disparos de'} ${phone}?`)) return;
 
             try {
-                const res = await fetch('/admin/action', {
+                const res = await authenticatedFetch('/admin/action', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action, phone, senha: password })
+                    body: JSON.stringify({ action, phone })
                 });
                 const result = await res.json();
                 alert(result.message);
@@ -439,13 +556,29 @@
         }
 
         function logout() {
-            window.location.href = '/';
+            localStorage.removeItem('admin_token');
+            window.location.href = '/login.html';
+        }
+
+        function clearFilters() {
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            fetchData();
         }
 
         // Modal Logic
-        const logModal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+        let logModal;
+        try {
+            logModal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+        } catch (e) {
+            console.error('Failed to init logModal', e);
+        }
 
         function viewLogDetails(index) {
+            if (!logModal) {
+                alert('Erro: Modal não inicializado. Verifique se o Bootstrap carregou corretamente.');
+                return;
+            }
             if (!window.lastLogs || !window.lastLogs[index]) return;
             const log = window.lastLogs[index];
 
@@ -458,7 +591,8 @@
 
             if (log.mediaFilename) {
                 mediaContainer.classList.remove('d-none');
-                const mediaUrl = `/admin/media/${log.mediaFilename}?senha=${password}`;
+                // Use token query param for media access
+                const mediaUrl = `/admin/media/${log.mediaFilename}?token=${adminToken}`;
                 const ext = log.mediaFilename.split('.').pop().toLowerCase();
 
                 if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
@@ -480,7 +614,43 @@
             logModal.show();
         }
 
+        // System Logs Logic
+        let systemLogsModal;
+        try {
+            systemLogsModal = new bootstrap.Modal(document.getElementById('systemLogsModal'));
+        } catch (e) {
+            console.error('Failed to init systemLogsModal', e);
+        }
+
+        async function openSystemLogs() {
+            if (!systemLogsModal) {
+                alert('Erro: Modal não inicializado. Verifique se o Bootstrap carregou corretamente.');
+                return;
+            }
+            try {
+                const res = await authenticatedFetch('/admin/logs');
+                const data = await res.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('system-logs-body');
+                    tbody.innerHTML = data.logs.map(log => `
+                        <tr>
+                            <td>${new Date(log.createdAt).toLocaleString()}</td>
+                            <td class="fw-bold">${log.action}</td>
+                            <td>${log.ip || '-'}</td>
+                            <td class="small text-muted">${log.details || ''}</td>
+                        </tr>
+                    `).join('');
+                    systemLogsModal.show();
+                }
+            } catch (e) {
+                alert('Erro ao carregar logs do sistema');
+            }
+        }
+
         // Initial fetch and periodic poll
+        // Ensure this runs even if modals failed
+        console.log('Starting fetch loop...');
         fetchData();
         setInterval(fetchData, 5000);
 

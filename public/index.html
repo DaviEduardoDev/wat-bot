@@ -7,6 +7,7 @@
     <title>WhatsApp Bot Mobile</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -135,6 +136,8 @@
                 </div>
                 <button id="btnConnect" class="btn btn-primary btn-lg w-100"
                     style="background: #764ba2; border: none;">Gerar Código de Conexão</button>
+                <button id="btnCancelAuto" class="btn btn-outline-danger btn-sm w-100 mt-2 d-none">Cancelar
+                    Reconexão</button>
 
                 <!-- Área de Código / QR -->
                 <div id="pairingArea" class="mt-4 text-center d-none">
@@ -167,14 +170,16 @@
                     <button class="nav-link active" id="pills-home-tab" data-bs-toggle="pill"
                         data-bs-target="#pills-home" type="button" role="tab">🚀 Disparos</button>
                 </li>
+
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-profile-tab" data-bs-toggle="pill"
-                        data-bs-target="#pills-profile" type="button" role="tab">📊
-                        Dashboard</button>
+                    <button class="nav-link" id="pills-templates-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-templates" type="button" role="tab" aria-controls="pills-templates"
+                        aria-selected="false">📝 Modelos</button>
                 </li>
+
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pills-manual-tab" data-bs-toggle="pill" data-bs-target="#pills-manual"
-                        type="button" role="tab">📖 Manual</button>
+                        type="button" role="tab" aria-controls="pills-manual" aria-selected="false">📖 Manual</button>
                 </li>
             </ul>
 
@@ -293,53 +298,31 @@
                     </div>
                 </div>
 
-                <!-- Aba Dashboard -->
-                <div class="tab-pane fade" id="pills-profile" role="tabpanel">
+
+
+
+                <!-- Aba Admin (Dashboard) -->
+
+
+                <!-- Aba Templates -->
+                <div class="tab-pane fade" id="pills-templates" role="tabpanel" aria-labelledby="pills-templates-tab">
                     <div class="card p-4">
-                        <h4 class="mb-4">📊 Dashboard de Métricas</h4>
-
-                        <div class="row g-3 mb-4 text-center">
-                            <div class="col-md-4">
-                                <div class="p-3 border rounded bg-light">
-                                    <h3 class="text-primary fw-bold" id="statTotal">0</h3>
-                                    <small class="text-muted">Total Enviados</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-3 border rounded bg-light">
-                                    <h3 class="text-success fw-bold" id="statSuccess">0</h3>
-                                    <small class="text-muted">Sucesso</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-3 border rounded bg-light">
-                                    <h3 class="text-danger fw-bold" id="statError">0</h3>
-                                    <small class="text-muted">Erros</small>
-                                </div>
-                            </div>
+                        <h4>📝 Meus Modelos de Mensagem</h4>
+                        <div class="input-group mb-3">
+                            <input type="text" id="template-name" class="form-control"
+                                placeholder="Nome do Modelo (Ex: Promoção 1)">
+                            <button class="btn btn-success" onclick="createTemplate()">Salvar Novo</button>
                         </div>
+                        <textarea id="template-content" class="form-control mb-3" rows="3"
+                            placeholder="Conteúdo da mensagem..."></textarea>
 
-                        <h5 class="mb-3">Histórico de Campanhas</h5>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Total</th>
-                                        <th>Sucesso</th>
-                                        <th>Erro</th>
-                                        <th>Relatório</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="historyBody">
-                                    <tr>
-                                        <td colspan="5" class="text-center">Carregando...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div id="templates-list" class="list-group">
+                            <!-- Templates loaded here -->
                         </div>
                     </div>
                 </div>
+
+                <!-- Aba Gallery -->
 
 
                 <!-- Aba Manual -->
@@ -413,8 +396,7 @@
 
                         <h5>5. Relatórios</h5>
                         <p>Ao final, clique em <strong>"Baixar CSV"</strong> para ter um relatório completo de quem
-                            recebeu a mensagem.<br>
-                            Você também pode ver o histórico na aba <strong>"📊 Dashboard"</strong>.</p>
+                            recebeu a mensagem.</p>
 
                         <hr>
 
@@ -485,7 +467,6 @@
         // Tabs
         const pillsTab = document.getElementById('pills-tab');
         const tabDisparos = document.getElementById('pills-home-tab');
-        const tabDashboard = document.getElementById('pills-profile-tab');
         const tabManual = document.getElementById('pills-manual-tab');
 
         const logArea = document.getElementById('logArea');
@@ -514,7 +495,7 @@
         async function loadStats() {
             if (!currentPhone) return;
             try {
-                const response = await fetch(`/stats?telefone=${currentPhone}`);
+                const response = await fetch(`/api/stats?telefone=${currentPhone}`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -579,8 +560,6 @@
             }, 3000);
         });
 
-
-
         socket.on('qr-code', (base64) => {
             pairingArea.classList.remove('d-none');
             qrCodeContainer.classList.remove('d-none');
@@ -596,7 +575,13 @@
             qrCodeContainer.classList.add('d-none');
             pairingCodeContainer.classList.remove('d-none');
 
+            // Fix Auto-Login UI state
+            btnConnect.textContent = 'Aguardando Código...';
+            btnCancelAuto.classList.add('d-none');
+
+            console.log('Código recebido:', code);
             pairingInstruction.innerHTML = `Código: <h1 class="display-4 text-center my-3 text-primary fw-bold">${code}</h1><p class="text-center">Insira este código no seu WhatsApp</p>`;
+            alert(`Seu código de pareamento é: ${code}`);
             addLog('Código de pareamento recebido!');
         });
 
@@ -623,17 +608,15 @@
 
                 // Garantir que as tabs estejam visíveis (caso venha do modo manual)
                 tabDisparos.parentElement.style.display = 'block';
-                tabDashboard.parentElement.style.display = 'block';
                 btnBackToLogin.classList.add('d-none');
 
-                // Ativar tab de disparos por padrão se não estiver em manual? 
-                // Ou manter onde está? Vamos forçar disparos para evitar confusão
                 const disparosTab = new bootstrap.Tab(tabDisparos);
                 disparosTab.show();
 
                 btnLogout.classList.remove('d-none');
                 btnLoadContacts.disabled = false; // Enable load button
                 addLog('Conectado ao WhatsApp!');
+                localStorage.setItem('watbot_phone', currentPhone); // Save session
             } else if (status === 'disconnected') {
                 loginScreen.style.display = 'block';
                 dashboardScreen.style.display = 'none';
@@ -642,6 +625,7 @@
                 btnConnect.textContent = 'Gerar Código de Conexão';
                 btnLoadContacts.disabled = true;
                 addLog('Desconectado.');
+                localStorage.removeItem('watbot_phone'); // Clear session
             }
         });
 
@@ -748,7 +732,7 @@
 
                 try {
                     addLog('Enviando mídia...');
-                    const response = await fetch(`/upload-media?telefone=${currentPhone}`, {
+                    const response = await fetch(`/api/upload-media?telefone=${currentPhone}`, {
                         method: 'POST',
                         body: formData
                     });
@@ -824,6 +808,35 @@
             isPaused = !isPaused;
         });
 
+        const btnCancelAuto = document.getElementById('btnCancelAuto');
+
+        // Cancel Auto-Login Logic
+        btnCancelAuto.addEventListener('click', () => {
+            if (currentPhone) socket.emit('cancelar-sessao', { telefone: currentPhone });
+            localStorage.removeItem('watbot_phone');
+            location.reload();
+        });
+
+        // Auto-Login Check
+        window.addEventListener('load', () => {
+            const storedPhone = localStorage.getItem('watbot_phone');
+            if (storedPhone) {
+                console.log('Restaurando sessão para:', storedPhone);
+                currentPhone = storedPhone;
+                // Keep the value empty or mask it, but internal currentPhone is set.
+                // Or set it to input so user sees what is happening
+                phoneInput.value = storedPhone.replace('55', '');
+
+                // Update UI to show we are trying
+                btnConnect.textContent = 'Reconectando...';
+                btnConnect.disabled = true;
+                btnCancelAuto.classList.remove('d-none'); // Show cancel button
+
+                socket.emit('iniciar-sessao', { telefone: storedPhone });
+                addLog('Tentando reconexão automática...');
+            }
+        });
+
         // Botão Parar
         btnStop.addEventListener('click', () => {
             if (confirm('Tem certeza que deseja PARAR totalmente os disparos?')) {
@@ -848,7 +861,6 @@
 
             // Esconder tabs restritas
             tabDisparos.parentElement.style.display = 'none';
-            tabDashboard.parentElement.style.display = 'none';
 
             // Mostrar botão de voltar
             btnBackToLogin.classList.remove('d-none');
@@ -864,15 +876,70 @@
 
             // Restaurar tabs (embora não sejam visíveis no login screen, é bom resetar)
             tabDisparos.parentElement.style.display = 'block';
-            tabDashboard.parentElement.style.display = 'block';
             btnBackToLogin.classList.add('d-none');
         });
 
-        // Evento de mudança de aba para carregar stats
-        const tabEl = document.getElementById('pills-profile-tab');
-        tabEl.addEventListener('shown.bs.tab', event => {
-            loadStats();
-        });
+        // --- ADMIN FUNCTIONS ---
+        // --- TEMPLATE FUNCTIONS ---
+        async function loadTemplates() {
+            if (!currentPhone) return;
+            const res = await fetch(`/api/templates?telefone=${currentPhone}`);
+            const data = await res.json();
+            const list = document.getElementById('templates-list');
+            list.innerHTML = '';
+
+            if (data.templates) {
+                data.templates.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    item.innerHTML = `
+                        <div>
+                            <strong>${t.name}</strong><br>
+                            <small class="text-muted">${t.content.substring(0, 50)}...</small>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-info me-2" onclick="useTemplate('${t.content.replace(/'/g, "\\'")}')">Usar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTemplate(${t.id})">🗑️</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        async function createTemplate() {
+            if (!currentPhone) {
+                alert('Conecte-se primeiro!');
+                return;
+            }
+            const name = document.getElementById('template-name').value;
+            const content = document.getElementById('template-content').value;
+
+            await fetch(`/api/templates?telefone=${currentPhone}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, content })
+            });
+
+            document.getElementById('template-name').value = '';
+            document.getElementById('template-content').value = '';
+            loadTemplates();
+        }
+
+        async function deleteTemplate(id) {
+            if (confirm('Deletar este modelo?')) {
+                await fetch(`/api/templates/${id}?telefone=${currentPhone}`, { method: 'DELETE' });
+                loadTemplates();
+            }
+        }
+
+        function useTemplate(content) {
+            document.getElementById('messageInput').value = content;
+            alert('Modelo carregado na área de mensagem!');
+        }
+
+        // --- TABS LISTENERS ---
+        document.getElementById('pills-templates-tab').addEventListener('click', loadTemplates);
 
     </script>
 </body>

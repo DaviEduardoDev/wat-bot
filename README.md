@@ -1,79 +1,99 @@
 # Disparador Humanizado de WhatsApp (WatBot)
 
-Este projeto é uma ferramenta de automação para envio de mensagens em massa via WhatsApp, utilizando a biblioteca `wppconnect`. Ele foi projetado para simular comportamento humano e evitar bloqueios.
+Este projeto é uma ferramenta profissional de automação para envio de mensagens em massa via WhatsApp, desenvolvida com Node.js e `wppconnect`. Ele simula o comportamento humano para garantir máxima segurança contra bloqueios.
 
-## Funcionalidades Principais
+## 🚀 Novidades da Versão 2.1 - Admin Dashboard & Mobile
 
-- **Busca Nativa de Contatos:** Carrega seus contatos diretamente do WhatsApp, filtrando grupos e contatos bloqueados.
-- **Envio de Mídia:** Suporte para imagens, vídeos, áudios (como gravado na hora) e PDF.
-- **Agendamento:** Programe disparos para uma data e hora específicas.
-- **Delay Humanizado:** Aguarda entre **15 a 40 segundos** (aleatório) entre cada envio para segurança da conta.
-- **Relatórios:** Gera arquivos CSV com o status de cada envio (Sucesso/Erro).
+- **Painel Administrativo (`/admin`):** Novo dashboard seguro protegido por senha e JWT.
+- **Log de Acessos:** Sistema de auditoria que registra logins, IPs e ações críticas.
+- **Visualização de Mídia:** Agora é possível ver as imagens, vídeos e ouvir áudios enviados diretamente nos logs.
+- **Mobile First:** Interface totalmente responsiva e adaptada para celulares.
+- **Controle de Sessões:** Desconecte ou pare disparos de qualquer sessão remotamente.
 
-## Pré-requisitos
+## 🌟 Funcionalidades Principais
 
-- Node.js instalado (versão 14 ou superior).
-- Google Chrome instalado.
+- **Busca Nativa de Contatos:** Carrega seus contatos diretamente da agenda do WhatsApp.
+- **Envio de Mídia:** Suporte total a imagens, vídeos e áudios (gravados como se fosse na hora).
+- **Modelos de Mensagem:** Crie e salve templates de mensagens.
+- **Manual Integrado:** Guia de uso completo dentro da interface.
+- **Agendamento Inteligente:** Programe disparos com delay humanizado.
+- **Proteção Antibloqueio:** Intervalos aleatórios entre 15 a 40 segundos.
 
-## Instalação
+## 🛠️ Tecnologias
 
-1. Abra o terminal na pasta do projeto.
-2. Instale as dependências:
+- **Backend:** Node.js, Express, Socket.io
+- **Segurança:** JWT (JSON Web Tokens), BCrypt
+- **Database:** SQLite (Sequelize ORM)
+- **Engine:** @wppconnect-team/wppconnect
+- **Frontend:** Bootstrap 5, Chart.js
 
-```bash
-npm install
-```
+## 📋 Pré-requisitos
 
-## Configuração
+- Node.js (v18+)
+- Google Chrome instalado
 
-1. Crie um arquivo chamado `.env` na raiz do projeto.
-2. Adicione a seguinte linha para definir a senha de administrador:
+## ⚙️ Instalação e Configuração
 
-```env
-ADMIN_PASSWORD=sua_senha_aqui
-```
-
-> **Nota:** Se não configurado, a senha padrão será `admin123`.
-
-## Como Usar
-
-1. **Iniciar o Bot:**
-   Execute o arquivo `start.bat` ou rode no terminal:
+1. **Clone o projeto:**
    ```bash
-   node bot.js
+   git clone https://github.com/DaviEduardoDev/wat-bot.git
+   cd wat-bot
    ```
 
-2. **Acessar o Painel:**
-   Abra o navegador em `http://localhost:3000`.
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
 
-3. **Conectar:**
-   - Digite seu número de WhatsApp (com DDD).
-   - Clique em "Gerar Código".
-   - Insira o código exibido no seu WhatsApp (Aparelhos Conectados > Conectar Aparelho > Conectar com número de telefone).
+3. **Configuração (.env):**
+   Crie um arquivo `.env` na raiz:
+   ```env
+   # Admin
+   ADMIN_PASSWORD=admin123
+   JWT_SECRET=sua_chave_secreta_super_segura_aqui
+   
+   # Server
+   PORT=3000
+   ```
 
-4. **Carregar Contatos:**
-   - Clique no botão **"📂 Carregar Contatos do WhatsApp"**.
-   - Aguarde o carregamento.
-   - Use a barra de busca para filtrar ou selecione manualmente os contatos desejados.
+## ▶️ Como Usar
 
-5. **Configurar Mensagem:**
-   - Digite sua mensagem. Use formatação do WhatsApp (*negrito*, _itálico_, etc).
-   - (Opcional) Anexe uma mídia.
-   - (Opcional) Agende o horário.
+### 1. Iniciar o Servidor
+```bash
+npm start
+```
 
-6. **Disparar:**
-   - Clique em **"INICIAR 🚀"**.
-   - Acompanhe o progresso na barra e no log lateral.
+### 2. Acessar o Bot
+- **Painel do Usuário:** [http://localhost:3000](http://localhost:3000)
+- **Painel Admin:** [http://localhost:3000/admin](http://localhost:3000/admin) (Senha padrão: `admin123`)
 
-## Limites e Recomendações
+### 3. Conectar WhatsApp
+1. No painel, digite seu número (com DDD).
+2. Clique em **"Gerar Código"**.
+3. No celular: **WhatsApp > Configurações > Aparelhos Conectados > Conectar com número**.
+4. Digite o código exibido.
 
-- **Sessões Simultâneas:** Recomendado entre **5 a 10 sessões** simultâneas em uma máquina comum (8GB RAM), devido ao consumo de recursos do Chrome.
-- **Anti-Bloqueio:** O bot já possui delays de segurança, mas evite enviar milhares de mensagens para contatos que não salvaram seu número (SPAM), pois isso aumenta o risco de denúncias e bloqueio.
+## 🔐 Segurança do Admin
 
-## Solução de Problemas
+- O painel admin é protegido por **Token JWT**.
+- O token expira automaticamente após 24 horas.
+- Tentativas de login falhas são registradas no banco de dados.
+- O sistema de logs monitora quem desconectou sessões ou parou campanhas.
 
-### O executável fecha sozinho?
-Isso geralmente acontece se o bot não encontrar o Google Chrome instalado. Certifique-se de que ele está instalado.
+## 📂 Estrutura
 
-### Contatos não aparecem?
-Certifique-se de que o WhatsApp terminou de sincronizar os contatos no celular antes de clicar em carregar.
+```
+/src
+  /config       # .env e Database
+  /controllers  # Admin e Lógica de Negócios
+  /middleware   # Autenticação JWT
+  /models       # Banco de Dados (AdminLog, Template)
+  /routes       # Rotas Protegidas
+  /services     # WPPConnect e Filas
+  /socket       # Realtime
+/public         # Telas (Login, Admin, Index)
+```
+
+## ⚠️ Aviso Legal
+
+Esta ferramenta foi criada para fins de automação legítima. O uso para SPAM ou envio não solicitado pode levar ao banimento do número pelo WhatsApp. Use com responsabilidade.
